@@ -8,11 +8,15 @@ import (
 	"os/signal"
 	"syscall"
 
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/umutaraz/pulseguard/internal/adapter/handler/http"
 	"github.com/umutaraz/pulseguard/internal/adapter/storage/memory"
 	"github.com/umutaraz/pulseguard/internal/config"
 	"github.com/umutaraz/pulseguard/internal/core/service"
+	"github.com/umutaraz/pulseguard/internal/monitor/pinger"
+	"github.com/umutaraz/pulseguard/internal/monitor/scheduler"
 	"github.com/umutaraz/pulseguard/pkg/logger"
 )
 
@@ -25,7 +29,13 @@ func main() {
 	slog.Info("Starting PulseGuard", "env", cfg.App.Environment)
 
 	repo := memory.NewInMemoryServiceRepository()
-	monitorService := service.NewMonitorService(repo)
+
+	// Init Monitoring Engine
+	httpPinger := pinger.NewHTTPPinger(5 * time.Second)
+	engine := scheduler.NewMonitoringEngine(repo, httpPinger)
+
+	// Inject engine into service
+	monitorService := service.NewMonitorService(repo, engine)
 	serviceHandler := http.NewServiceHandler(monitorService)
 
 	app := fiber.New(fiber.Config{

@@ -4,18 +4,26 @@ import (
 	"context"
 	"errors"
 	"time"
-
+	
+	"github.com/google/uuid"
 	"github.com/umutaraz/pulseguard/internal/core/domain"
 	"github.com/umutaraz/pulseguard/internal/core/ports"
 )
 
-type MonitorService struct {
-	repo ports.ServiceRepository
+type Scheduler interface {
+	StartMonitorForService(service *domain.Service)
+	StopMonitorForService(id uuid.UUID)
 }
 
-func NewMonitorService(repo ports.ServiceRepository) *MonitorService {
+type MonitorService struct {
+	repo      ports.ServiceRepository
+	scheduler Scheduler
+}
+
+func NewMonitorService(repo ports.ServiceRepository, scheduler Scheduler) *MonitorService {
 	return &MonitorService{
-		repo: repo,
+		repo:      repo,
+		scheduler: scheduler,
 	}
 }
 
@@ -32,6 +40,8 @@ func (s *MonitorService) RegisterService(ctx context.Context, name, url string, 
 	if err := s.repo.Create(ctx, newService); err != nil {
 		return nil, err
 	}
+
+	s.scheduler.StartMonitorForService(newService)
 
 	return newService, nil
 }
