@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"log/slog"
@@ -14,6 +15,7 @@ import (
 	"github.com/umutaraz/pulseguard/internal/adapter/handler/http"
 	"github.com/umutaraz/pulseguard/internal/adapter/storage/memory"
 	"github.com/umutaraz/pulseguard/internal/config"
+	"github.com/umutaraz/pulseguard/internal/core/domain"
 	"github.com/umutaraz/pulseguard/internal/core/service"
 	"github.com/umutaraz/pulseguard/internal/monitor/pinger"
 	"github.com/umutaraz/pulseguard/internal/monitor/scheduler"
@@ -33,6 +35,15 @@ func main() {
 	// Init Monitoring Engine
 	httpPinger := pinger.NewHTTPPinger(5 * time.Second)
 	engine := scheduler.NewMonitoringEngine(repo, httpPinger)
+
+	// Init Analyzer (The Brain)
+	analyzer := service.NewAnalyzerService(repo)
+	
+	// Wire Engine results to Analyzer
+	engine.SetResultHandler(func(result domain.CheckResult) {
+		// Run analysis in background to not block the scheduler
+		go analyzer.AnalyzeResult(context.Background(), result)
+	})
 
 	// Inject engine into service
 	monitorService := service.NewMonitorService(repo, engine)

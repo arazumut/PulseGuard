@@ -16,13 +16,19 @@ const (
 	StatusUnknown  ServiceStatus = "UNKNOWN"
 )
 
+type ServiceThresholds struct {
+	LatencyWarning  time.Duration `json:"latency_warning"`
+	LatencyCritical time.Duration `json:"latency_critical"`
+}
+
 type Service struct {
 	ID        uuid.UUID     `json:"id"`
 	Name      string        `json:"name"`
 	URL       string        `json:"url"`
 	Interval  time.Duration `json:"interval"`
-	Type      string        `json:"type"`
-	Status    ServiceStatus `json:"status"`
+	Type       string            `json:"type"`
+	Thresholds ServiceThresholds `json:"thresholds"`
+	Status     ServiceStatus     `json:"status"`
 	CreatedAt time.Time     `json:"created_at"`
 	UpdatedAt time.Time     `json:"updated_at"`
 }
@@ -42,7 +48,11 @@ func NewService(name, url string, interval time.Duration) *Service {
 		Name:      name,
 		URL:       url,
 		Interval:  interval,
-		Type:      "HTTP",
+		Type:     "HTTP",
+		Thresholds: ServiceThresholds{
+			LatencyWarning:  500 * time.Millisecond,
+			LatencyCritical: 2000 * time.Millisecond,
+		},
 		Status:    StatusUnknown,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
