@@ -26,20 +26,19 @@ Sağlam temel, net scope, teknik borçsuz başlangıç
 
 ### 🔹 Task List
 
-* [ ] Ürün ismi & branding netleştirme (**PulseGuard**)
-* [ ] Problem tanımı & hedef kullanıcı profili yazımı
-* [ ] Rakip analizi (UptimeRobot, Datadog, NewRelic)
-* [ ] MVP kapsamının netleştirilmesi
-* [ ] Teknoloji stack kararı (Go, PostgreSQL, Redis)
-* [ ] **Docker-first mimari kararı**
-* [ ] Repo oluşturma (monorepo)
-* [ ] Coding standartları ve branch stratejisi
+* [x] Ürün ismi & branding netleştirme (**PulseGuard**)
+* [x] Problem tanımı & hedef kullanıcı profili yazımı
+* [x] Rakip analizi (UptimeRobot, Datadog, NewRelic)
+* [x] MVP kapsamının netleştirilmesi
+* [x] Teknoloji stack kararı (Go, PostgreSQL, Redis)
+* [x] **Docker-first mimari kararı**
+* [x] Repo oluşturma (monorepo)
+* [x] Coding standartları ve branch stratejisi
 
 ### 📦 Çıktılar
 
 * README.md (vizyon + hedef)
-* Architecture overview diyagramı
-* Docker Compose taslak dosyası
+* Architecture overview diyagramı (Hexagonal Structure kuruldu)
 
 ---
 
@@ -51,14 +50,14 @@ Sistemin kalbi: **yüksek performanslı heartbeat motoru**
 
 ### 🔹 Task List
 
-* [ ] Go proje yapısının oluşturulması
-* [ ] HTTP server (net/http veya Fiber)
-* [ ] `/heartbeat` endpoint
-* [ ] Request validation
-* [ ] In-memory service registry
-* [ ] Goroutine bazlı heartbeat worker
-* [ ] Timeout detection logic
-* [ ] İlk logging altyapısı
+* [x] Go proje yapısının oluşturulması (Hexagonal Architecture)
+* [x] HTTP server (Fiber)
+* [x] `/heartbeat` endpoint (`/health`)
+* [x] Request validation
+* [x] In-memory service registry
+* [x] Goroutine bazlı heartbeat worker (Scheduler Engine)
+* [x] Timeout detection logic
+* [x] İlk logging altyapısı (slog JSON)
 
 ### 📦 Çıktılar
 

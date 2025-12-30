@@ -43,3 +43,42 @@ go mod tidy
 # Projeyi çalıştır (Local)
 go run cmd/pulseguard/main.go
 ```
+
+## 📡 API Kullanımı
+
+Sistem şu an In-Memory çalışmaktadır. Uygulama kapandığında veriler silinir.
+
+### 1. Servis Ekleme
+
+Monitoring başlatmak için servisi kaydedin:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/services \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Google",
+    "url": "https://google.com",
+    "interval": 10
+  }'
+```
+
+### 2. Servisleri Listeleme
+
+```bash
+curl http://localhost:8080/api/v1/services
+```
+
+### 3. Logları İzleme
+
+Uygulama loglarında her 10 saniyede bir `Health Check` çıktısı göreceksiniz:
+
+```json
+{"time":"...","level":"INFO","msg":"Health Check","service":"Google","status_code":200,"latency":123456789,"success":true}
+```
+
+## 🗺️ Roadmap Durumu
+
+- [x] **Faz 0:** Mimari Kurulum (Hexagonal + Fiber)
+- [x] **Faz 1:** Core Monitoring Engine (Scheduler + Pinger)
+- [ ] **Faz 2:** Akıllı Analiz (Latency trendleri)
+- [ ] **Faz 3:** PostgreSQL & Redis (Kalıcı veri)
