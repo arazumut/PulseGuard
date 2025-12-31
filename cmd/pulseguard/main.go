@@ -40,6 +40,7 @@ func main() {
 
 	// Use Postgres Repository
 	repo := postgres.NewPostgresServiceRepository(dbPool)
+	metricRepo := postgres.NewPostgresMetricRepository(dbPool)
 
 	// Init Monitoring Engine (Now it reads from DB!)
 	httpPinger := pinger.NewHTTPPinger(5 * time.Second)
@@ -52,7 +53,7 @@ func main() {
 	}
 
 	// Init Analyzer (The Brain)
-	analyzer := service.NewAnalyzerService(repo)
+	analyzer := service.NewAnalyzerService(repo, metricRepo)
 	
 	// Wire Engine results to Analyzer
 	engine.SetResultHandler(func(result domain.CheckResult) {

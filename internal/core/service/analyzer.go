@@ -9,16 +9,26 @@ import (
 )
 
 type AnalyzerService struct {
-	repo ports.ServiceRepository
+	repo       ports.ServiceRepository
+	metricRepo ports.MetricRepository
 }
 
-func NewAnalyzerService(repo ports.ServiceRepository) *AnalyzerService {
+func NewAnalyzerService(repo ports.ServiceRepository, metricRepo ports.MetricRepository) *AnalyzerService {
 	return &AnalyzerService{
-		repo: repo,
+		repo:       repo,
+		metricRepo: metricRepo,
 	}
 }
 
+// AnalyzeResult evaluates a check result and updates the service status if changed.
 func (s *AnalyzerService) AnalyzeResult(ctx context.Context, result domain.CheckResult) {
+	// 0. Save Metric (Fire and Forget or Synchronous? Sync for data integrity)
+	if err := s.metricRepo.Save(ctx, &result); err != nil {
+		slog.Error("Analyzer: Failed to save metric", "service_id", result.ServiceID, "error", err)
+		// Continue analysis even if save failed
+	}
+
+	// 1. Fetch current service state (to get thresholds)
 	service, err := s.repo.GetByID(ctx, result.ServiceID)
 	if err != nil {
 		slog.Error("Analyzer: Service not found", "service_id", result.ServiceID, "error", err)
