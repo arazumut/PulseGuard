@@ -9,10 +9,11 @@ import (
 )
 
 type Config struct {
-	App      AppConfig      `mapstructure:"app"`
-	Server   ServerConfig   `mapstructure:"server"`
-	Postgres PostgresConfig `mapstructure:"postgres"`
-	Redis    RedisConfig    `mapstructure:"redis"`
+	App          AppConfig          `mapstructure:"app"`
+	Server       ServerConfig       `mapstructure:"server"`
+	Postgres     PostgresConfig     `mapstructure:"postgres"`
+	Redis        RedisConfig        `mapstructure:"redis"`
+	Notification NotificationConfig `mapstructure:"notification"`
 }
 
 type AppConfig struct {
@@ -40,6 +41,10 @@ type RedisConfig struct {
 	Addr     string `mapstructure:"addr"`
 	Password string `mapstructure:"password"`
 	DB       int    `mapstructure:"db"`
+}
+
+type NotificationConfig struct {
+	SlackWebhookURL string `mapstructure:"slack_webhook_url"`
 }
 
 // LoadConfig reads configuration from file or environment variables.

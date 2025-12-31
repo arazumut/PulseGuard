@@ -14,6 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/umutaraz/pulseguard/internal/adapter/handler/http"
 	"github.com/umutaraz/pulseguard/internal/adapter/handler/websocket"
+	"github.com/umutaraz/pulseguard/internal/adapter/notification/slack"
 	"github.com/umutaraz/pulseguard/internal/adapter/storage/postgres"
 	"github.com/umutaraz/pulseguard/internal/config"
 	"github.com/umutaraz/pulseguard/internal/core/domain"
@@ -44,6 +45,9 @@ func main() {
 	repo := postgres.NewPostgresServiceRepository(dbPool)
 	metricRepo := postgres.NewPostgresMetricRepository(dbPool)
 
+	// Init Notification Service (Slack)
+	slackService := slack.NewSlackService(cfg.Notification.SlackWebhookURL)
+
 	// Init Monitoring Engine
 	httpPinger := pinger.NewHTTPPinger(5 * time.Second)
 	engine := scheduler.NewMonitoringEngine(repo, httpPinger)
@@ -53,7 +57,7 @@ func main() {
 	}
 
 	// Init Analyzer (The Brain)
-	analyzer := service.NewAnalyzerService(repo, metricRepo)
+	analyzer := service.NewAnalyzerService(repo, metricRepo, slackService)
 	
 	// Init WebSocket Hub (The Broadcaster)
 	hub := websocket.NewHub()

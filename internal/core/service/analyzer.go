@@ -11,12 +11,14 @@ import (
 type AnalyzerService struct {
 	repo       ports.ServiceRepository
 	metricRepo ports.MetricRepository
+	notifier   ports.NotificationService
 }
 
-func NewAnalyzerService(repo ports.ServiceRepository, metricRepo ports.MetricRepository) *AnalyzerService {
+func NewAnalyzerService(repo ports.ServiceRepository, metricRepo ports.MetricRepository, notifier ports.NotificationService) *AnalyzerService {
 	return &AnalyzerService{
 		repo:       repo,
 		metricRepo: metricRepo,
+		notifier:   notifier,
 	}
 }
 
@@ -45,8 +47,16 @@ func (s *AnalyzerService) AnalyzeResult(ctx context.Context, result domain.Check
 			"msg", result.ErrorMessage,
 		)
 
+
 		if err := s.repo.Update(ctx, service); err != nil {
 			slog.Error("Failed to update service status", "id", service.ID, "error", err)
+		} else {
+			// Notify success update
+			go func() {
+				if err := s.notifier.NotifyStatusChange(context.Background(), service, oldStatus, newStatus); err != nil {
+					slog.Error("Failed to send notification", "error", err)
+				}
+			}()
 		}
 	}
 }
