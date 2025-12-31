@@ -19,4 +19,12 @@ func SetupRouter(app *fiber.App, handler *ServiceHandler) {
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
 	})
+
+	// Static Files (Frontend)
+	app.Static("/", "./web/public")
+
+	// SPA Fallback (Optional, if using client-side routing)
+	// app.Get("*", func(c *fiber.Ctx) error {
+	// 	return c.SendFile("./web/public/index.html")
+	// })
 }

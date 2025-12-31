@@ -13,6 +13,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/umutaraz/pulseguard/internal/adapter/handler/http"
+	"github.com/umutaraz/pulseguard/internal/adapter/handler/websocket"
 	"github.com/umutaraz/pulseguard/internal/adapter/storage/postgres"
 	"github.com/umutaraz/pulseguard/internal/config"
 	"github.com/umutaraz/pulseguard/internal/core/domain"
@@ -23,6 +24,7 @@ import (
 )
 
 func main() {
+	// Config & Logger init
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
@@ -38,9 +40,11 @@ func main() {
 	}
 	defer dbPool.Close()
 
+	// Repos
 	repo := postgres.NewPostgresServiceRepository(dbPool)
 	metricRepo := postgres.NewPostgresMetricRepository(dbPool)
 
+	// Init Monitoring Engine
 	httpPinger := pinger.NewHTTPPinger(5 * time.Second)
 	engine := scheduler.NewMonitoringEngine(repo, httpPinger)
 
@@ -48,10 +52,23 @@ func main() {
 		slog.Error("Failed to load services from DB", "error", err)
 	}
 
+	// Init Analyzer (The Brain)
 	analyzer := service.NewAnalyzerService(repo, metricRepo)
+	
+	// Init WebSocket Hub (The Broadcaster)
+	hub := websocket.NewHub()
+	go hub.Run()
+
+	// Wire Engine results to Analyzer AND WebSocket
 	engine.SetResultHandler(func(result domain.CheckResult) {
+		// 1. Analyze & Save (Async)
 		go analyzer.AnalyzeResult(context.Background(), result)
+		
+		// 2. Broadcast to Dashboard (Real-time)
+		hub.BroadcastCheckResult(result)
 	})
+
+	// Inject engine into service
 	monitorService := service.NewMonitorService(repo, engine)
 	serviceHandler := http.NewServiceHandler(monitorService)
 
@@ -62,6 +79,10 @@ func main() {
 	})
 
 	http.SetupRouter(app, serviceHandler)
+	
+	// Add WebSocket Route
+	app.Use("/ws", websocket.UpgradeMiddleware)
+	app.Get("/ws", websocket.NewWebSocketHandler(hub))
 
 	go func() {
 		addr := fmt.Sprintf(":%s", cfg.Server.Port)
