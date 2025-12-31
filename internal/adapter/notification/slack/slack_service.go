@@ -42,9 +42,9 @@ func (s *SlackService) NotifyStatusChange(ctx context.Context, service *domain.S
 	}
 
 	color := "#36a64f" // Green
-	if newStatus == domain.ServiceStatusCritical || newStatus == domain.ServiceStatusDown {
+	if newStatus == domain.StatusCritical || newStatus == domain.StatusDown {
 		color = "#dc3545" // Red
-	} else if newStatus == domain.ServiceStatusWarning {
+	} else if newStatus == domain.StatusWarning {
 		color = "#ffc107" // Yellow
 	}
 

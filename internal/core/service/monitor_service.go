@@ -16,14 +16,16 @@ type Scheduler interface {
 }
 
 type MonitorService struct {
-	repo      ports.ServiceRepository
-	scheduler Scheduler
+	repo       ports.ServiceRepository
+	metricRepo ports.MetricRepository
+	scheduler  Scheduler
 }
 
-func NewMonitorService(repo ports.ServiceRepository, scheduler Scheduler) *MonitorService {
+func NewMonitorService(repo ports.ServiceRepository, metricRepo ports.MetricRepository, scheduler Scheduler) *MonitorService {
 	return &MonitorService{
-		repo:      repo,
-		scheduler: scheduler,
+		repo:       repo,
+		metricRepo: metricRepo,
+		scheduler:  scheduler,
 	}
 }
 
@@ -48,4 +50,9 @@ func (s *MonitorService) RegisterService(ctx context.Context, name, url string, 
 
 func (s *MonitorService) ListServices(ctx context.Context) ([]*domain.Service, error) {
 	return s.repo.GetAll(ctx)
+}
+
+func (s *MonitorService) GetServiceMetrics(ctx context.Context, serviceID uuid.UUID) ([]domain.CheckResult, error) {
+	// Let's limit to 50 for charts
+	return s.metricRepo.GetHistory(ctx, serviceID, 50)
 }

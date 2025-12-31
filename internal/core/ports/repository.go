@@ -17,4 +17,5 @@ type ServiceRepository interface {
 
 type MetricRepository interface {
 	Save(ctx context.Context, result *domain.CheckResult) error
+	GetHistory(ctx context.Context, serviceID uuid.UUID, limit int) ([]domain.CheckResult, error)
 }

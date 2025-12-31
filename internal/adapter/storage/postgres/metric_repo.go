@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/umutaraz/pulseguard/internal/core/domain"
 )
@@ -51,6 +52,42 @@ func (r *PostgresMetricRepository) Save(ctx context.Context, result *domain.Chec
 	return nil
 }
 
-func (r *PostgresMetricRepository) GetHistory(ctx context.Context, serviceID string, limit int) ([]domain.CheckResult, error) {
-	return nil, nil 
+// GetHistory Last N metrics for a service
+func (r *PostgresMetricRepository) GetHistory(ctx context.Context, serviceID uuid.UUID, limit int) ([]domain.CheckResult, error) {
+	query := `
+		SELECT checked_at, status_code, latency_ns, success, error_message 
+		FROM checks 
+		WHERE service_id = $1 
+		ORDER BY checked_at DESC 
+		LIMIT $2
+	`
+
+	rows, err := r.db.Query(ctx, query, serviceID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query history: %w", err)
+	}
+	defer rows.Close()
+
+	var results []domain.CheckResult
+	for rows.Next() {
+		var r domain.CheckResult
+		r.ServiceID = serviceID
+		var errorMessage *string
+		var statusCode *int
+		
+		if err := rows.Scan(&r.CheckedAt, &statusCode, &r.Latency, &r.Success, &errorMessage); err != nil {
+			return nil, err
+		}
+
+		if errorMessage != nil {
+			r.ErrorMessage = *errorMessage
+		}
+		if statusCode != nil {
+			r.StatusCode = *statusCode
+		}
+
+		results = append(results, r)
+	}
+
+	return results, nil
 }

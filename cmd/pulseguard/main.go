@@ -73,7 +73,7 @@ func main() {
 	})
 
 	// Inject engine into service
-	monitorService := service.NewMonitorService(repo, engine)
+	monitorService := service.NewMonitorService(repo, metricRepo, engine)
 	serviceHandler := http.NewServiceHandler(monitorService)
 
 	app := fiber.New(fiber.Config{

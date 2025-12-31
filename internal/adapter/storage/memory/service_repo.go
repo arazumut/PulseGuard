@@ -49,7 +49,6 @@ func (r *InMemoryServiceRepository) GetAll(ctx context.Context) ([]*domain.Servi
 	return services, nil
 }
 
-// 2026 ilk commit :)
 func (r *InMemoryServiceRepository) Update(ctx context.Context, service *domain.Service) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()

@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="assets/vendor/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/vendor/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="assets/vendor/toastr/toastr.min.css">
+    <!-- C3 Chart CSS -->
+    <link rel="stylesheet" href="assets/vendor/charts-c3/plugin.css" />
 
     <!-- MAIN Project CSS file -->
     <link rel="stylesheet" href="assets/css/main.css">
@@ -61,14 +63,12 @@
 
     <div id="wrapper" class="theme-cyan">
 
-        <!-- Page Loader -->
         <div class="page-loader-wrapper">
             <div class="loader">
                 <p>PulseGuard Loading...</p>
             </div>
         </div>
 
-        <!-- Top navbar -->
         <nav class="navbar navbar-fixed-top">
             <div class="container-fluid">
                 <div class="navbar-brand">
@@ -77,8 +77,7 @@
             </div>
         </nav>
 
-        <!-- Main Content -->
-        <div id="main-content" style="margin-left: 0;"> <!-- Full width -->
+        <div id="main-content" style="margin-left: 0;">
             <div class="container-fluid">
                 <div class="block-header">
                     <div class="row">
@@ -97,7 +96,7 @@
                     <div class="col-lg-12">
                         <div class="card">
                             <div class="header">
-                                <h2>Services Status</h2>
+                                <h2>Services Status <small>Click 'View' to see realtime chart</small></h2>
                             </div>
                             <div class="body">
                                 <div class="table-responsive">
@@ -110,26 +109,45 @@
                                                 <th>Status</th>
                                                 <th>Last Latency</th>
                                                 <th>Last Check</th>
+                                                <th>Action</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="service-list">
-                                        </tbody>
+                                        <tbody id="service-list"></tbody>
                                     </table>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- CHART SECTION -->
+                <div class="row clearfix" id="chart-section" style="display:none;">
+                    <div class="col-lg-12">
+                        <div class="card">
+                            <div class="header">
+                                <h2 id="chart-title">Latency History</h2>
+                                <ul class="header-dropdown">
+                                    <li><a href="javascript:void(0);" onclick="$('#chart-section').hide();"><i
+                                                class="fa fa-times"></i></a></li>
+                                </ul>
+                            </div>
+                            <div class="body">
+                                <!-- C3 Chart Container -->
+                                <div id="latency-chart"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
-
     </div>
 
-    <!-- Javascript -->
     <script src="assets/bundles/libscripts.bundle.js"></script>
     <script src="assets/bundles/vendorscripts.bundle.js"></script>
+    <script src="assets/bundles/c3.bundle.js"></script> <!-- C3 Chart Lib -->
     <script src="assets/bundles/mainscripts.bundle.js"></script>
-    <script src="js/pulseguard.js"></script> <!-- Custom Logic -->
+    <script src="js/pulseguard.js"></script>
 </body>
 
 </html>

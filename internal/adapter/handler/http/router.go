@@ -15,6 +15,7 @@ func SetupRouter(app *fiber.App, handler *ServiceHandler) {
 	services := api.Group("/services")
 	services.Post("/", handler.Register)
 	services.Get("/", handler.List)
+	services.Get("/:id/metrics", handler.GetMetrics)
 
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.SendString("OK")

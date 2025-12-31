@@ -2,6 +2,7 @@ package http
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/umutaraz/pulseguard/internal/core/service"
 )
 
@@ -44,5 +45,23 @@ func (h *ServiceHandler) List(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"data": services,
 		"count": len(services),
+	})
+}
+
+func (h *ServiceHandler) GetMetrics(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid service id"})
+	}
+
+	metrics, err := h.svc.GetServiceMetrics(c.Context(), id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"service_id": id,
+		"history":    metrics,
 	})
 }
