@@ -56,6 +56,8 @@ func LoadConfig() (*Config, error) {
 	v.SetDefault("postgres.host", "localhost")
 	v.SetDefault("postgres.port", "5432")
 	v.SetDefault("postgres.dbname", "pulseguard")
+	v.SetDefault("postgres.user", "pulseguard")           // Added default
+	v.SetDefault("postgres.password", "pulseguard_password") // Added default
 	v.SetDefault("postgres.sslmode", "disable")
 	v.SetDefault("redis.addr", "localhost:6379")
 

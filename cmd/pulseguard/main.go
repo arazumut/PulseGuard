@@ -13,7 +13,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/umutaraz/pulseguard/internal/adapter/handler/http"
-	"github.com/umutaraz/pulseguard/internal/adapter/storage/memory"
+	"github.com/umutaraz/pulseguard/internal/adapter/storage/postgres"
 	"github.com/umutaraz/pulseguard/internal/config"
 	"github.com/umutaraz/pulseguard/internal/core/domain"
 	"github.com/umutaraz/pulseguard/internal/core/service"
@@ -30,11 +30,26 @@ func main() {
 	logger.InitLogger(cfg.App.LogLevel)
 	slog.Info("Starting PulseGuard", "env", cfg.App.Environment)
 
-	repo := memory.NewInMemoryServiceRepository()
+	// 3. Init Adapters (Infrastructure)
+	ctx := context.Background()
+	dbPool, err := postgres.NewConnection(ctx, cfg.Postgres)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer dbPool.Close()
 
-	// Init Monitoring Engine
+	// Use Postgres Repository
+	repo := postgres.NewPostgresServiceRepository(dbPool)
+
+	// Init Monitoring Engine (Now it reads from DB!)
 	httpPinger := pinger.NewHTTPPinger(5 * time.Second)
 	engine := scheduler.NewMonitoringEngine(repo, httpPinger)
+
+	// Bootstrap: Load existing services from DB
+	if err := engine.LoadAndStart(ctx); err != nil {
+		slog.Error("Failed to load services from DB", "error", err)
+		// Don't crash, maybe DB is empty or just starting
+	}
 
 	// Init Analyzer (The Brain)
 	analyzer := service.NewAnalyzerService(repo)

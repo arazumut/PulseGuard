@@ -22,6 +22,20 @@ type MonitoringEngine struct {
 	onResult       ResultHandler
 }
 
+// LoadAndStart loads all existing services from repository and starts monitoring them.
+func (e *MonitoringEngine) LoadAndStart(ctx context.Context) error {
+	services, err := e.serviceRepo.GetAll(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, s := range services {
+		e.StartMonitorForService(s)
+	}
+	slog.Info("Bootstrapped monitoring engine", "count", len(services))
+	return nil
+}
+
 func NewMonitoringEngine(repo ports.ServiceRepository, pinger *pinger.HTTPPinger) *MonitoringEngine {
 	return &MonitoringEngine{
 		serviceRepo:    repo,
