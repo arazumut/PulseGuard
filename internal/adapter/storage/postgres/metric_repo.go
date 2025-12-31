@@ -26,13 +26,10 @@ func (r *PostgresMetricRepository) Save(ctx context.Context, result *domain.Chec
 
 	latencyNs := result.Latency.Nanoseconds()
 	
-	// Use NullInt/String logic if needed, but for now direct values
 	var errorMessage *string
 	if result.ErrorMessage != "" {
 		errorMessage = &result.ErrorMessage
 	}
-
-	// Status code 0 is valid for network errors, but let's keep it clean
 	var statusCode *int
 	if result.StatusCode != 0 {
 		statusCode = &result.StatusCode
@@ -54,8 +51,6 @@ func (r *PostgresMetricRepository) Save(ctx context.Context, result *domain.Chec
 	return nil
 }
 
-// TODO: Phase 4 - Add GetHistory methods for charts
 func (r *PostgresMetricRepository) GetHistory(ctx context.Context, serviceID string, limit int) ([]domain.CheckResult, error) {
-	// Implementation for Dashboard charts
 	return nil, nil 
 }

@@ -38,30 +38,20 @@ func main() {
 	}
 	defer dbPool.Close()
 
-	// Use Postgres Repository
 	repo := postgres.NewPostgresServiceRepository(dbPool)
 	metricRepo := postgres.NewPostgresMetricRepository(dbPool)
 
-	// Init Monitoring Engine (Now it reads from DB!)
 	httpPinger := pinger.NewHTTPPinger(5 * time.Second)
 	engine := scheduler.NewMonitoringEngine(repo, httpPinger)
 
-	// Bootstrap: Load existing services from DB
 	if err := engine.LoadAndStart(ctx); err != nil {
 		slog.Error("Failed to load services from DB", "error", err)
-		// Don't crash, maybe DB is empty or just starting
 	}
 
-	// Init Analyzer (The Brain)
 	analyzer := service.NewAnalyzerService(repo, metricRepo)
-	
-	// Wire Engine results to Analyzer
 	engine.SetResultHandler(func(result domain.CheckResult) {
-		// Run analysis in background to not block the scheduler
 		go analyzer.AnalyzeResult(context.Background(), result)
 	})
-
-	// Inject engine into service
 	monitorService := service.NewMonitorService(repo, engine)
 	serviceHandler := http.NewServiceHandler(monitorService)
 
