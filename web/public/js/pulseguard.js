@@ -1,19 +1,14 @@
-// Global Scope Functions (Guaranteed availability)
 window.showChart = function (serviceId, serviceName) {
     console.log("View clicked for:", serviceName);
 
-    // Show Chart Section
     $('#chart-section').show();
     $('#chart-title').text('History: ' + serviceName);
 
-    // Scroll to chart
     document.getElementById('chart-section').scrollIntoView({ behavior: 'smooth' });
 
-    // Fetch Data
     $.get('/api/v1/services/' + serviceId + '/metrics', function (response) {
         if (!response.history) return;
 
-        // Draw Chart (C3.js)
         const history = response.history.reverse();
         const latencies = ['Latency', ...history.map(d => (d.latency_ns / 1e6).toFixed(2))];
 
@@ -28,7 +23,7 @@ window.showChart = function (serviceId, serviceName) {
                 x: {
                     type: 'category',
                     categories: history.map(d => new Date(d.checked_at).toLocaleTimeString()),
-                    show: false // Hide labels if too crowded
+                    show: false
                 }
             }
         });
@@ -37,11 +32,9 @@ window.showChart = function (serviceId, serviceName) {
     });
 };
 
-// Main App Logic
 $(function () {
     const table = $('#service-list');
 
-    // 1. WebSocket Connetion
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
 
@@ -50,7 +43,6 @@ $(function () {
         updateRow(data);
     };
 
-    // 2. Load Initial Services
     $.get('/api/v1/services', function (response) {
         if (response.data) {
             response.data.forEach(s => createRow(s));
@@ -61,9 +53,8 @@ $(function () {
         if ($('#service-' + service.id).length > 0) return;
 
         const intervalSec = service.interval / 1e9;
-        const safeName = service.name.replace(/'/g, "\\'"); // Escape quotes
+        const safeName = service.name.replace(/'/g, "\\'");
 
-        // Status Color
         let badgeClass = 'status-unknown';
         if (service.status === 'HEALTHY') badgeClass = 'status-healthy';
         if (service.status === 'WARNING') badgeClass = 'status-warning';
@@ -96,10 +87,7 @@ $(function () {
         row.find('.latency').text(ms + ' ms');
         row.find('.last-check').text(new Date(data.checked_at).toLocaleTimeString());
 
-        // Blink
         row.addClass('row-blink');
         setTimeout(() => row.removeClass('row-blink'), 500);
-
-        // Update Badge if needed (Optional: handled by reload usually)
     }
 });
