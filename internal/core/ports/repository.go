@@ -2,6 +2,7 @@ package ports
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/umutaraz/pulseguard/internal/core/domain"
@@ -18,4 +19,5 @@ type ServiceRepository interface {
 type MetricRepository interface {
 	Save(ctx context.Context, result *domain.CheckResult) error
 	GetHistory(ctx context.Context, serviceID uuid.UUID, limit int) ([]domain.CheckResult, error)
+	GetStats(ctx context.Context, serviceID uuid.UUID, since time.Time) (*domain.ServiceStats, error)
 }

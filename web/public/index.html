@@ -68,6 +68,17 @@
                 background-color: rgba(255, 255, 255, 0.2);
             }
         }
+
+        .stats-widget h3 {
+            font-weight: 300;
+            margin-bottom: 0;
+        }
+
+        .stats-widget h5 {
+            font-size: 0.9em;
+            margin-top: 0;
+            opacity: 0.7;
+        }
     </style>
 </head>
 
@@ -90,8 +101,6 @@
             </div>
         </nav>
 
-        <!-- Sidebar (Optional, leaving simpler wrapper for now but keeping theme classes) -->
-
         <div id="main-content" style="margin-left: 0;">
             <div class="container-fluid">
                 <div class="block-header">
@@ -111,7 +120,7 @@
                     <div class="col-lg-12">
                         <div class="card">
                             <div class="header">
-                                <h2>Services Status <small>Click 'View' to see realtime chart</small></h2>
+                                <h2>Services Status <small>Click 'View' to see analytics</small></h2>
                             </div>
                             <div class="body">
                                 <div class="table-responsive">
@@ -140,13 +149,30 @@
                     <div class="col-lg-12">
                         <div class="card">
                             <div class="header">
-                                <h2 id="chart-title">Latency History</h2>
+                                <h2 id="chart-title">Analytics</h2>
                                 <ul class="header-dropdown">
                                     <li><a href="javascript:void(0);" onclick="$('#chart-section').hide();"><i
                                                 class="fa fa-times"></i></a></li>
                                 </ul>
                             </div>
                             <div class="body">
+
+                                <!-- Stats Widgets -->
+                                <div class="row mb-5 text-center stats-widget">
+                                    <div class="col-md-4 border-right border-secondary">
+                                        <h5 class="text-muted">Uptime (24h)</h5>
+                                        <h3 id="stat-uptime" class="text-success">--%</h3>
+                                    </div>
+                                    <div class="col-md-4 border-right border-secondary">
+                                        <h5 class="text-muted">Avg Latency</h5>
+                                        <h3 id="stat-latency" class="text-warning">-- ms</h3>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h5 class="text-muted">Total Checks</h5>
+                                        <h3 id="stat-checks" class="text-info">--</h3>
+                                    </div>
+                                </div>
+
                                 <div id="latency-chart" style="height: 350px;"></div>
                             </div>
                         </div>

@@ -60,8 +60,16 @@ func (h *ServiceHandler) GetMetrics(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	stats, err := h.svc.GetServiceStats(c.Context(), id)
+	if err != nil {
+		// Log error but don't fail, just return nil stats? Or fail?
+		// Let's log and continue
+		// slog.Error("Failed to get stats", "error", err)
+	}
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"service_id": id,
 		"history":    metrics,
+		"stats":      stats,
 	})
 }

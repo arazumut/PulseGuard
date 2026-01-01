@@ -42,6 +42,14 @@ type CheckResult struct {
 	ErrorMessage string       `json:"error_message,omitempty"`
 }
 
+type ServiceStats struct {
+	UptimePercentage float64       `json:"uptime_percentage"`
+	AvgLatency       time.Duration `json:"avg_latency"`
+	TotalChecks      int           `json:"total_checks"`
+	FailedChecks     int           `json:"failed_checks"`
+	Since            time.Time     `json:"since"`
+}
+
 func NewService(name, url string, interval time.Duration) *Service {
 	return &Service{
 		ID:        uuid.New(),

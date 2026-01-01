@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -90,4 +91,39 @@ func (r *PostgresMetricRepository) GetHistory(ctx context.Context, serviceID uui
 	}
 
 	return results, nil
+}
+
+func (r *PostgresMetricRepository) GetStats(ctx context.Context, serviceID uuid.UUID, since time.Time) (*domain.ServiceStats, error) {
+	query := `
+		SELECT 
+			COUNT(*) as total, 
+			COUNT(*) FILTER (WHERE success = false) as failed,
+			COALESCE(AVG(latency_ns), 0) as avg_latency
+		FROM checks
+		WHERE service_id = $1 AND checked_at >= $2
+	`
+
+	var total, failed int
+	var avgLatency float64
+
+	err := r.db.QueryRow(ctx, query, serviceID, since).Scan(&total, &failed, &avgLatency)
+	if err != nil {
+		return nil, fmt.Errorf("failed to aggregation aggregation stats: %w", err)
+	}
+
+	stats := &domain.ServiceStats{
+		TotalChecks:  total,
+		FailedChecks: failed,
+		AvgLatency:   time.Duration(avgLatency),
+		Since:        since,
+	}
+
+	if total > 0 {
+		successCount := total - failed
+		stats.UptimePercentage = (float64(successCount) / float64(total)) * 100
+	} else {
+		stats.UptimePercentage = 100.0 // No checks means no downtime technically
+	}
+
+	return stats, nil
 }

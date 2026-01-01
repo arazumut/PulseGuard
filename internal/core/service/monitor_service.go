@@ -56,3 +56,9 @@ func (s *MonitorService) GetServiceMetrics(ctx context.Context, serviceID uuid.U
 	// Let's limit to 50 for charts
 	return s.metricRepo.GetHistory(ctx, serviceID, 50)
 }
+
+func (s *MonitorService) GetServiceStats(ctx context.Context, serviceID uuid.UUID) (*domain.ServiceStats, error) {
+	// Stats for last 24 hours
+	since := time.Now().Add(-24 * time.Hour)
+	return s.metricRepo.GetStats(ctx, serviceID, since)
+}
