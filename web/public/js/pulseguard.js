@@ -1,119 +1,227 @@
-window.showChart = function (serviceId, serviceName) {
-    console.log("View clicked for:", serviceName);
+// --- PULSEGUARD PRO ---
 
-    $('#chart-section').show();
-    $('#chart-title').text('Analytics: ' + serviceName);
+// Global View Functions
+window.viewAnalytics = function (serviceId, serviceName) {
+    console.log("Loading analytics for:", serviceName);
 
-    document.getElementById('chart-section').scrollIntoView({ behavior: 'smooth' });
+    const panel = $('#analytics-panel');
+    panel.removeClass('hidden');
+    $('#chart-service-name').text(serviceName);
 
-    $.get('/api/v1/services/' + serviceId + '/metrics', function (response) {
+    // Reset & Scroll
+    $('#stat-uptime').text('Loading...');
+    $('#stat-latency').text('--');
+    $('#stat-checks').text('--');
+    $('#chart-container').html('<div class="text-center p-10 text-gray-500"><i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3"></i><br>Fetching Metrics...</div>');
+    panel[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-        if (response.stats) {
-            const up = response.stats.uptime_percentage;
-            const avg = response.stats.avg_latency;
-            const total = response.stats.total_checks;
-            $('#stat-uptime').text(up.toFixed(2) + '%');
-            if (up >= 99.9) $('#stat-uptime').attr('class', 'text-success');
-            else if (up >= 95) $('#stat-uptime').attr('class', 'text-warning');
-            else $('#stat-uptime').attr('class', 'text-danger');
-
-            $('#stat-latency').text((avg / 1e6).toFixed(2) + ' ms');
-
-            $('#stat-checks').text(total);
-        }
-        if (!response.history || response.history.length === 0) {
-            $('#latency-chart').html('<p class="text-center text-muted p-4">Not enough data for chart.</p>');
-            return;
-        }
-
-        const history = response.history.reverse();
-        const latencies = ['Latency', ...history.map(d => (d.latency_ns / 1e6).toFixed(2))];
-
-        c3.generate({
-            bindto: '#latency-chart',
-            data: {
-                columns: [latencies],
-                type: 'area-spline',
-                colors: { 'Latency': '#28a745' }
-            },
-            axis: {
-                x: {
-                    type: 'category',
-                    categories: history.map(d => new Date(d.checked_at).toLocaleTimeString()),
-                    show: false
-                }
-            },
-            point: {
-                show: false
-            }
+    // Fetch Data
+    $.get(`/api/v1/services/${serviceId}/metrics`)
+        .done(function (resp) {
+            renderStats(resp.stats);
+            renderChart(resp.history);
+        })
+        .fail(function () {
+            toastr.error('Failed to load metrics');
+            $('#chart-container').html('<div class="text-center p-10 text-red-400">Error loading data</div>');
         });
+};
 
-    }).fail(function () {
-        toastr.error('Could not load history');
+window.hideAnalytics = function () {
+    $('#analytics-panel').addClass('hidden');
+};
+
+// --- CRUD Operations ---
+
+window.showAddModal = function () {
+    $('#add-modal').removeClass('hidden').addClass('flex');
+    $('#input-name').focus();
+};
+
+window.hideAddModal = function () {
+    $('#add-modal').addClass('hidden').removeClass('flex');
+    $('#add-service-form')[0].reset();
+};
+
+window.handleCreate = function (e) {
+    e.preventDefault();
+
+    // Construct payload. Note: Interval is in seconds as per API spec
+    const payload = {
+        name: $('#input-name').val(),
+        url: $('#input-url').val(),
+        interval: parseInt($('#input-interval').val())
+    };
+
+    $.ajax({
+        url: '/api/v1/services',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(payload),
+        success: function () {
+            toastr.success('Service created successfully');
+            window.hideAddModal();
+            setTimeout(() => location.reload(), 1000); // Reload to start monitoring
+        },
+        error: function (xhr) {
+            toastr.error('Failed to create service: ' + (xhr.responseJSON?.error || 'Unknown error'));
+        }
     });
 };
 
-$(function () {
-    const table = $('#service-list');
+window.deleteService = function (id) {
+    if (!confirm('Are you sure? This will delete all history for this service.')) return;
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-
-    ws.onmessage = function (event) {
-        const data = JSON.parse(event.data);
-        updateRow(data);
-    };
-
-    $.get('/api/v1/services', function (response) {
-        if (response.data) {
-            response.data.forEach(s => createRow(s));
+    $.ajax({
+        url: '/api/v1/services/' + id,
+        type: 'DELETE',
+        success: function () {
+            toastr.success('Service deleted');
+            $(`#service-${id}`).fadeOut(300, function () { $(this).remove(); });
+            // Hide analytics if open for this service
+            $('#analytics-panel').addClass('hidden');
+        },
+        error: function () {
+            toastr.error('Failed to delete service');
         }
     });
+};
 
-    function createRow(service) {
-        if ($('#service-' + service.id).length > 0) return;
+// --- Render Helpers ---
 
-        const intervalSec = service.interval / 1e9;
-        const safeName = service.name.replace(/'/g, "\\'");
-        const safeId = service.id;
+function renderStats(stats) {
+    if (!stats) return;
+    $('#stat-uptime').text(stats.uptime_percentage.toFixed(2) + '%');
+    $('#stat-latency').text((stats.avg_latency / 1e6).toFixed(2) + ' ms');
+    $('#stat-checks').text(stats.total_checks.toLocaleString());
 
-        let badgeClass = 'status-unknown';
-        if (service.status === 'HEALTHY') badgeClass = 'status-healthy';
-        if (service.status === 'WARNING') badgeClass = 'status-warning';
-        if (service.status === 'CRITICAL' || service.status === 'DOWN') badgeClass = 'status-critical';
+    // Color Logic
+    const upEl = $('#stat-uptime');
+    upEl.removeClass('text-success text-warning text-danger');
+    if (stats.uptime_percentage >= 99) upEl.addClass('text-success');
+    else if (stats.uptime_percentage >= 95) upEl.addClass('text-warning');
+    else upEl.addClass('text-danger');
+}
 
-        const html = `
-            <tr id="service-${service.id}">
-                <td><strong>${service.name}</strong></td>
-                <td><a href="${service.url}" target="_blank">${service.url}</a></td>
-                <td>${intervalSec}s</td>
-                <td><span class="status-badge ${badgeClass}">${service.status}</span></td>
-                <td class="latency">-</td>
-                <td class="last-check">-</td>
-                <td>
-                    <button class="btn btn-outline-info btn-sm view-btn" 
-                            onclick="window.showChart('${safeId}', '${safeName}')">
-                        View
-                    </button>
-                </td>
-            </tr>
-        `;
-        table.append(html);
+function renderChart(history) {
+    if (!history || history.length === 0) {
+        $('#chart-container').html('<div class="text-center p-10 text-gray-500"><i class="fa-regular fa-folder-open text-4xl mb-3"></i><br>No historical data available yet.</div>');
+        return;
     }
 
-    function updateRow(data) {
-        const row = $('#service-' + data.service_id);
-        if (row.length === 0) return;
+    const dataReverse = history.reverse();
+    const latencyValues = ['Latency', ...dataReverse.map(d => (d.latency_ns / 1e6).toFixed(2))];
+    const categories = dataReverse.map(d => new Date(d.checked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
 
-        const ms = (data.latency / 1e6).toFixed(2);
-        row.find('.latency').text(ms + ' ms');
-        row.find('.last-check').text(new Date(data.checked_at).toLocaleTimeString());
+    c3.generate({
+        bindto: '#chart-container',
+        data: {
+            columns: [latencyValues],
+            type: 'area-spline',
+            colors: { 'Latency': '#3b82f6' }
+        },
+        axis: {
+            x: {
+                type: 'category',
+                categories: categories,
+                show: false
+            },
+            y: {
+                label: 'Latency (ms)',
+                padding: { bottom: 0 }
+            }
+        },
+        grid: { y: { show: true } },
+        point: { show: false, r: 3 },
+        tooltip: { format: { value: function (v) { return v + ' ms'; } } }
+    });
+}
 
-        row.addClass('row-blink');
-        setTimeout(() => row.removeClass('row-blink'), 500);
+// --- Main App Initialization ---
+$(function () {
+    // WebSocket
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
 
-        if (!data.success) {
-            row.find('.status-badge').attr('class', 'status-badge status-critical').text('DOWN');
+    let ws;
+
+    function connectWS() {
+        ws = new WebSocket(wsUrl);
+        ws.onopen = () => toastr.success('Real-time connection established');
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            updateServiceRow(data);
+        };
+        ws.onclose = () => {
+            console.warn("WS Closed, reconnecting...");
+            setTimeout(connectWS, 3000);
+        };
+    }
+    connectWS();
+
+    // Initial Load
+    $.get('/api/v1/services', function (response) {
+        if (response.data) {
+            response.data.forEach(addServiceRow);
+        }
+    });
+});
+
+function addServiceRow(service) {
+    if ($(`#service-${service.id}`).length > 0) return;
+
+    const intervalSec = service.interval / 1e9;
+    const safeName = service.name.replace(/'/g, "\\'");
+    const safeId = service.id;
+
+    let badgeColor = 'bg-gray-600';
+    if (service.status === 'HEALTHY') badgeColor = 'bg-green-600';
+    if (service.status === 'WARNING') badgeColor = 'bg-yellow-600';
+    if (service.status === 'CRITICAL' || service.status === 'DOWN') badgeColor = 'bg-red-600';
+
+    const row = `
+        <tr id="service-${service.id}" class="hover:bg-gray-800/50 transition border-b border-gray-800 group">
+            <td class="p-4 font-medium text-white">${service.name}</td>
+            <td class="p-4 text-gray-400 text-sm font-mono truncate max-w-xs">${service.url}</td>
+            <td class="p-4 text-gray-500 text-sm">${intervalSec}s</td>
+            <td class="p-4">
+                <span class="status-badge px-2 py-1 rounded text-xs font-bold text-white ${badgeColor}">
+                    ${service.status}
+                </span>
+            </td>
+            <td class="p-4 text-right font-mono text-primary latency-cell">-</td>
+            <td class="p-4 text-right text-sm text-gray-500 time-cell">-</td>
+            <td class="p-4 text-center flex justify-center gap-2">
+                <button onclick="window.viewAnalytics('${safeId}', '${safeName}')" 
+                        class="text-gray-400 hover:text-white bg-gray-700 hover:bg-primary px-3 py-1 rounded-md text-sm transition" title="Analytics">
+                    <i class="fa-solid fa-chart-simple"></i>
+                </button>
+                <button onclick="window.deleteService('${safeId}')" 
+                        class="text-gray-400 hover:text-white bg-gray-700 hover:bg-red-600 px-3 py-1 rounded-md text-sm transition" title="Delete">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `;
+    $('#service-list').append(row);
+}
+
+function updateServiceRow(data) {
+    const row = $(`#service-${data.service_id}`);
+    if (row.length === 0) return;
+
+    row.addClass('bg-gray-700');
+    setTimeout(() => row.removeClass('bg-gray-700'), 300);
+
+    row.find('.latency-cell').text((data.latency / 1e6).toFixed(2) + ' ms');
+    row.find('.time-cell').text(new Date().toLocaleTimeString());
+
+    const badge = row.find('.status-badge');
+    if (!data.success) {
+        badge.removeClass('bg-green-600 bg-yellow-600').addClass('bg-red-600').text('DOWN');
+    } else {
+        if (data.status_code >= 200 && data.status_code < 400 && badge.text().trim() === 'DOWN') {
+            badge.removeClass('bg-red-600').addClass('bg-green-600').text('HEALTHY');
         }
     }
-});
+}

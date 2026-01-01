@@ -1,193 +1,248 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <title>:: PulseGuard :: Dashboard</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PulseGuard | System Overview</title>
 
-    <!-- VENDOR CSS -->
-    <link rel="stylesheet" href="assets/vendor/bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/vendor/font-awesome/css/font-awesome.min.css">
-    <link rel="stylesheet" href="assets/vendor/toastr/toastr.min.css">
-    <!-- C3 Chart CSS -->
-    <link rel="stylesheet" href="assets/vendor/charts-c3/plugin.css" />
+    <!-- Modern Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- MAIN Project CSS file -->
-    <link rel="stylesheet" href="assets/css/main.css">
-    <style>
-        .status-badge {
-            font-weight: bold;
-            padding: 5px 10px;
-            border-radius: 4px;
-            color: white;
-        }
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
-        .status-healthy {
-            background-color: #28a745;
-        }
+    <!-- C3 & D3 for Charts -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.16.0/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.min.js"></script>
 
-        .status-warning {
-            background-color: #ffc107;
-            color: black;
-        }
+    <!-- jQuery & Toastr -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
-        .status-critical {
-            background-color: #dc3545;
-        }
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        .status-unknown {
-            background-color: #6c757d;
-        }
-
-        .c3-axis-x text,
-        .c3-axis-y text,
-        .c3-legend-item {
-            fill: #ccc;
-        }
-
-        .c3-axis-x path,
-        .c3-axis-x line,
-        .c3-axis-y path,
-        .c3-axis-y line {
-            stroke: #555;
-        }
-
-        .view-btn {
-            cursor: pointer;
-        }
-
-        .row-blink {
-            animation: blinker 1s linear;
-        }
-
-        @keyframes blinker {
-            50% {
-                opacity: 0.5;
-                background-color: rgba(255, 255, 255, 0.2);
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0f172a',
+                        card: '#1e293b',
+                        primary: '#3b82f6',
+                        success: '#10b981',
+                        danger: '#ef4444',
+                        warning: '#f59e0b',
+                        text: '#cbd5e1'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
             }
         }
+    </script>
 
-        .stats-widget h3 {
-            font-weight: 300;
-            margin-bottom: 0;
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #cbd5e1;
         }
 
-        .stats-widget h5 {
-            font-size: 0.9em;
-            margin-top: 0;
-            opacity: 0.7;
+        .c3-axis text {
+            fill: #94a3b8;
+            font-size: 11px;
+        }
+
+        .c3-legend-item {
+            fill: #cbd5e1 !important;
+        }
+
+        .c3-line {
+            stroke-width: 2px;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Modal Animation */
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: all 0.2s ease-out;
+        }
+
+        .modal-exit {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .modal-exit-active {
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 0.2s ease-in;
         }
     </style>
 </head>
 
-<body data-theme="dark" class="font-nunito">
+<body class="antialiased min-h-screen flex flex-col">
 
-    <div id="wrapper" class="theme-cyan">
+    <!-- Navbar -->
+    <nav class="bg-card border-b border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="bg-primary/20 p-2 rounded-lg">
+                        <i class="fa-solid fa-heart-pulse text-primary text-xl"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight text-white">Pulse<span
+                            class="text-primary">Guard</span></span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="window.showAddModal()"
+                        class="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition shadow-lg shadow-blue-500/20 flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> New Service
+                    </button>
+                    <a href="https://github.com/arazumut" target="_blank"
+                        class="text-gray-400 hover:text-white transition">
+                        <i class="fa-brands fa-github text-xl"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-        <div class="page-loader-wrapper">
-            <div class="loader">
-                <p>PulseGuard Loading...</p>
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-7xl">
+
+        <!-- Header -->
+        <div class="mb-8 flex justify-between items-end">
+            <div>
+                <h1 class="text-3xl font-bold text-white mb-2">Service Monitor</h1>
+                <p class="text-gray-400">Real-time latency and uptime tracking for all microservices.</p>
+            </div>
+            <button onclick="location.reload()"
+                class="bg-card hover:bg-gray-700 text-sm text-gray-300 px-4 py-2 rounded-md border border-gray-600 transition">
+                <i class="fa-solid fa-rotate-right mr-2"></i> Refresh
+            </button>
+        </div>
+
+        <!-- Services Table Card -->
+        <div class="bg-card rounded-xl border border-gray-700 shadow-xl overflow-hidden mb-8">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr
+                            class="bg-gray-800/50 text-gray-400 text-xs uppercase tracking-wider border-b border-gray-700">
+                            <th class="p-4 font-semibold">Service</th>
+                            <th class="p-4 font-semibold">Endpoint</th>
+                            <th class="p-4 font-semibold">Interval</th>
+                            <th class="p-4 font-semibold">Status</th>
+                            <th class="p-4 font-semibold text-right">Latency</th>
+                            <th class="p-4 font-semibold text-right">Last Check</th>
+                            <th class="p-4 font-semibold text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="service-list" class="divide-y divide-gray-700">
+                        <!-- JS injected rows -->
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <!-- Top navbar -->
-        <nav class="navbar navbar-fixed-top">
-            <div class="container-fluid">
-                <div class="navbar-brand">
-                    <a href="index.html"><strong>PULSE</strong>GUARD</a>
+        <!-- Analytics Section -->
+        <div id="analytics-panel" class="hidden transition-all duration-500 ease-in-out">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-primary"></i>
+                    <span id="chart-service-name">Service Analytics</span>
+                </h2>
+                <button onclick="window.hideAnalytics()" class="text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="bg-card p-6 rounded-xl border border-gray-700 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
+                        <i class="fa-solid fa-shield-halved text-6xl text-success"></i>
+                    </div>
+                    <p class="text-gray-400 text-sm font-medium uppercase">Uptime (24h)</p>
+                    <h3 class="text-3xl font-bold text-white mt-1" id="stat-uptime">--%</h3>
+                </div>
+
+                <div class="bg-card p-6 rounded-xl border border-gray-700 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
+                        <i class="fa-solid fa-stopwatch text-6xl text-warning"></i>
+                    </div>
+                    <p class="text-gray-400 text-sm font-medium uppercase">Avg. Latency</p>
+                    <h3 class="text-3xl font-bold text-white mt-1" id="stat-latency">-- ms</h3>
+                </div>
+
+                <div class="bg-card p-6 rounded-xl border border-gray-700 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
+                        <i class="fa-solid fa-database text-6xl text-primary"></i>
+                    </div>
+                    <p class="text-gray-400 text-sm font-medium uppercase">Total Checks</p>
+                    <h3 class="text-3xl font-bold text-white mt-1" id="stat-checks">--</h3>
                 </div>
             </div>
-        </nav>
 
-        <div id="main-content" style="margin-left: 0;">
-            <div class="container-fluid">
-                <div class="block-header">
-                    <div class="row">
-                        <div class="col-lg-6 col-md-6 col-sm-12">
-                            <h2>Live Monitor</h2>
-                            <ul class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="index.html"><i class="fa fa-dashboard"></i></a>
-                                </li>
-                                <li class="breadcrumb-item active">Dashboard</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row clearfix">
-                    <div class="col-lg-12">
-                        <div class="card">
-                            <div class="header">
-                                <h2>Services Status <small>Click 'View' to see analytics</small></h2>
-                            </div>
-                            <div class="body">
-                                <div class="table-responsive">
-                                    <table class="table table-hover mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Service Name</th>
-                                                <th>URL</th>
-                                                <th>Interval</th>
-                                                <th>Status</th>
-                                                <th>Last Latency</th>
-                                                <th>Last Check</th>
-                                                <th>Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="service-list"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CHART SECTION -->
-                <div class="row clearfix" id="chart-section" style="display:none;">
-                    <div class="col-lg-12">
-                        <div class="card">
-                            <div class="header">
-                                <h2 id="chart-title">Analytics</h2>
-                                <ul class="header-dropdown">
-                                    <li><a href="javascript:void(0);" onclick="$('#chart-section').hide();"><i
-                                                class="fa fa-times"></i></a></li>
-                                </ul>
-                            </div>
-                            <div class="body">
-
-                                <!-- Stats Widgets -->
-                                <div class="row mb-5 text-center stats-widget">
-                                    <div class="col-md-4 border-right border-secondary">
-                                        <h5 class="text-muted">Uptime (24h)</h5>
-                                        <h3 id="stat-uptime" class="text-success">--%</h3>
-                                    </div>
-                                    <div class="col-md-4 border-right border-secondary">
-                                        <h5 class="text-muted">Avg Latency</h5>
-                                        <h3 id="stat-latency" class="text-warning">-- ms</h3>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <h5 class="text-muted">Total Checks</h5>
-                                        <h3 id="stat-checks" class="text-info">--</h3>
-                                    </div>
-                                </div>
-
-                                <div id="latency-chart" style="height: 350px;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+            <!-- Chart Container -->
+            <div class="bg-card p-6 rounded-xl border border-gray-700 shadow-lg">
+                <div id="chart-container"></div>
             </div>
+        </div>
+
+    </main>
+
+    <!-- Add Service Modal -->
+    <div id="add-modal"
+        class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 backdrop-blur-sm transition-opacity">
+        <div
+            class="bg-card border border-gray-700 p-8 rounded-xl shadow-2xl w-full max-w-md transform transition-all scale-100">
+            <h2 class="text-2xl font-bold text-white mb-6">Track New Service</h2>
+            <form id="add-service-form" onsubmit="window.handleCreate(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-gray-400 text-sm mb-1">Service Name</label>
+                        <input type="text" id="input-name" required placeholder="e.g. Payment Gateway"
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 focus:border-primary focus:outline-none transition placeholder-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-sm mb-1">Endpoint URL</label>
+                        <input type="url" id="input-url" required placeholder="https://api.stripe.com/health"
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 focus:border-primary focus:outline-none transition placeholder-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-sm mb-1">Check Interval (seconds)</label>
+                        <input type="number" id="input-interval" required value="60" min="5"
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 focus:border-primary focus:outline-none transition placeholder-gray-600">
+                        <p class="text-xs text-gray-500 mt-1">Minimum 5 seconds</p>
+                    </div>
+                </div>
+                <div class="mt-8 flex justify-end gap-3">
+                    <button type="button" onclick="window.hideAddModal()"
+                        class="text-gray-400 hover:text-white px-4 py-2 text-sm font-medium">Cancel</button>
+                    <button type="submit"
+                        class="bg-primary hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition shadow-lg shadow-blue-500/20">Start
+                        Tracking</button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- Javascript -->
-    <script src="assets/bundles/libscripts.bundle.js"></script>
-    <script src="assets/bundles/vendorscripts.bundle.js"></script>
-    <script src="assets/bundles/c3.bundle.js"></script> <!-- C3 Chart -->
-    <script src="assets/bundles/mainscripts.bundle.js"></script>
+    <!-- Application Logic -->
     <script src="js/pulseguard.js"></script>
 
 </body>

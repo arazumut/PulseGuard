@@ -73,3 +73,17 @@ func (h *ServiceHandler) GetMetrics(c *fiber.Ctx) error {
 		"stats":      stats,
 	})
 }
+
+func (h *ServiceHandler) Delete(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid service id"})
+	}
+
+	if err := h.svc.DeleteService(c.Context(), id); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}

@@ -60,3 +60,11 @@ func (s *MonitorService) GetServiceStats(ctx context.Context, serviceID uuid.UUI
 	since := time.Now().Add(-24 * time.Hour)
 	return s.metricRepo.GetStats(ctx, serviceID, since)
 }
+
+func (s *MonitorService) DeleteService(ctx context.Context, id uuid.UUID) error {
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return err
+	}
+	s.scheduler.StopMonitorForService(id)
+	return nil
+}
