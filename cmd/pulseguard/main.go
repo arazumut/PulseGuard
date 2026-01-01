@@ -14,6 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/umutaraz/pulseguard/internal/adapter/handler/http"
 	"github.com/umutaraz/pulseguard/internal/adapter/handler/websocket"
+	redis_bus "github.com/umutaraz/pulseguard/internal/adapter/bus/redis"
 	"github.com/umutaraz/pulseguard/internal/adapter/notification/slack"
 	"github.com/umutaraz/pulseguard/internal/adapter/storage/postgres"
 	"github.com/umutaraz/pulseguard/internal/config"
@@ -43,6 +44,14 @@ func main() {
 	metricRepo := postgres.NewPostgresMetricRepository(dbPool)
 
 	slackService := slack.NewSlackService(cfg.Notification.SlackWebhookURL)
+
+	// Init Redis Event Bus (Scalability Layer)
+	eventBus, err := redis_bus.NewRedisEventBus(cfg.Redis)
+	if err != nil {
+		log.Fatalf("Failed to init Redis: %v", err)
+	}
+	slog.Info("Connected to Redis Events")
+
 	httpPinger := pinger.NewHTTPPinger(5 * time.Second)
 	engine := scheduler.NewMonitoringEngine(repo, httpPinger)
 
@@ -54,9 +63,26 @@ func main() {
 	hub := websocket.NewHub()
 	go hub.Run()
 
+	// Subscribe to Redis updates and forward to WebSocket clients
+	go func() {
+		ch, err := eventBus.SubscribeCheckResults(context.Background())
+		if err != nil {
+			slog.Error("Failed to subscribe to Redis", "error", err)
+			return
+		}
+		for result := range ch {
+			hub.BroadcastCheckResult(result)
+		}
+	}()
+
 	engine.SetResultHandler(func(result domain.CheckResult) {
+		// 1. Analyze (State Change & Alerts)
 		go analyzer.AnalyzeResult(context.Background(), result)
-		hub.BroadcastCheckResult(result)
+		
+		// 2. Publish (Distributed Broadcast)
+		if err := eventBus.PublishCheckResult(context.Background(), result); err != nil {
+			slog.Error("Failed to publish to redis", "error", err)
+		}
 	})
 
 	monitorService := service.NewMonitorService(repo, metricRepo, engine)
