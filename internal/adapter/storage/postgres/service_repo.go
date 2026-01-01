@@ -121,7 +121,6 @@ func (r *PostgresServiceRepository) Update(ctx context.Context, service *domain.
 		WHERE id = $3
 	`
 
-	// Sadece status update ediyoruz şimdilik (Analyzer için)
 	_, err := r.db.Exec(ctx, query, service.Status, service.UpdatedAt, service.ID)
 	if err != nil {
 		return fmt.Errorf("failed to update service: %w", err)

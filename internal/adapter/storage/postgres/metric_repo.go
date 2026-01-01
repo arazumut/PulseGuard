@@ -122,7 +122,7 @@ func (r *PostgresMetricRepository) GetStats(ctx context.Context, serviceID uuid.
 		successCount := total - failed
 		stats.UptimePercentage = (float64(successCount) / float64(total)) * 100
 	} else {
-		stats.UptimePercentage = 100.0 // No checks means no downtime technically
+		stats.UptimePercentage = 100.0
 	}
 
 	return stats, nil

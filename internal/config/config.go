@@ -18,7 +18,7 @@ type Config struct {
 
 type AppConfig struct {
 	Name        string `mapstructure:"name"`
-	Environment string `mapstructure:"environment"` // dev, prod, staging
+	Environment string `mapstructure:"environment"`
 	LogLevel    string `mapstructure:"log_level"`
 }
 

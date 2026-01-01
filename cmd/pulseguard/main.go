@@ -25,7 +25,6 @@ import (
 )
 
 func main() {
-	// Config & Logger init
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
@@ -33,7 +32,6 @@ func main() {
 	logger.InitLogger(cfg.App.LogLevel)
 	slog.Info("Starting PulseGuard", "env", cfg.App.Environment)
 
-	// 3. Init Adapters (Infrastructure)
 	ctx := context.Background()
 	dbPool, err := postgres.NewConnection(ctx, cfg.Postgres)
 	if err != nil {
@@ -41,14 +39,10 @@ func main() {
 	}
 	defer dbPool.Close()
 
-	// Repos
 	repo := postgres.NewPostgresServiceRepository(dbPool)
 	metricRepo := postgres.NewPostgresMetricRepository(dbPool)
 
-	// Init Notification Service (Slack)
 	slackService := slack.NewSlackService(cfg.Notification.SlackWebhookURL)
-
-	// Init Monitoring Engine
 	httpPinger := pinger.NewHTTPPinger(5 * time.Second)
 	engine := scheduler.NewMonitoringEngine(repo, httpPinger)
 
@@ -56,23 +50,15 @@ func main() {
 		slog.Error("Failed to load services from DB", "error", err)
 	}
 
-	// Init Analyzer (The Brain)
 	analyzer := service.NewAnalyzerService(repo, metricRepo, slackService)
-	
-	// Init WebSocket Hub (The Broadcaster)
 	hub := websocket.NewHub()
 	go hub.Run()
 
-	// Wire Engine results to Analyzer AND WebSocket
 	engine.SetResultHandler(func(result domain.CheckResult) {
-		// 1. Analyze & Save (Async)
 		go analyzer.AnalyzeResult(context.Background(), result)
-		
-		// 2. Broadcast to Dashboard (Real-time)
 		hub.BroadcastCheckResult(result)
 	})
 
-	// Inject engine into service
 	monitorService := service.NewMonitorService(repo, metricRepo, engine)
 	serviceHandler := http.NewServiceHandler(monitorService)
 
@@ -84,7 +70,6 @@ func main() {
 
 	http.SetupRouter(app, serviceHandler)
 	
-	// Add WebSocket Route
 	app.Use("/ws", websocket.UpgradeMiddleware)
 	app.Get("/ws", websocket.NewWebSocketHandler(hub))
 

@@ -5,7 +5,6 @@ import (
 	"os"
 )
 
-// InitLogger initializes the global structured logger.
 func InitLogger(level string) {
 	var logLevel slog.Level
 	switch level {
@@ -25,10 +24,8 @@ func InitLogger(level string) {
 		Level: logLevel,
 	}
 
-	// JSON handler for production-grade logging
 	handler := slog.NewJSONHandler(os.Stdout, opts)
 	logger := slog.New(handler)
 
-	// Set as global default logger
 	slog.SetDefault(logger)
 }

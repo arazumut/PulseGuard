@@ -22,7 +22,6 @@ type MonitoringEngine struct {
 	onResult       ResultHandler
 }
 
-// LoadAndStart loads all existing services from repository and starts monitoring them.
 func (e *MonitoringEngine) LoadAndStart(ctx context.Context) error {
 	services, err := e.serviceRepo.GetAll(ctx)
 	if err != nil {
@@ -45,17 +44,13 @@ func NewMonitoringEngine(repo ports.ServiceRepository, pinger *pinger.HTTPPinger
 	}
 }
 
-// SetResultHandler sets the callback function for processing check results.
 func (e *MonitoringEngine) SetResultHandler(handler ResultHandler) {
 	e.onResult = handler
 }
-
-// StartMonitorForService starts a dedicated goroutine for monitoring a specific service.
 func (e *MonitoringEngine) StartMonitorForService(service *domain.Service) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	// If already monitored, stop it first (restart logic)
 	if cancel, exists := e.activeMonitors[service.ID]; exists {
 		cancel()
 	}
@@ -68,7 +63,6 @@ func (e *MonitoringEngine) StartMonitorForService(service *domain.Service) {
 	go e.monitorLoop(ctx, service)
 }
 
-// StopMonitorForService stops the monitoring goroutine for a service.
 func (e *MonitoringEngine) StopMonitorForService(id uuid.UUID) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -84,7 +78,6 @@ func (e *MonitoringEngine) monitorLoop(ctx context.Context, service *domain.Serv
 	ticker := time.NewTicker(service.Interval)
 	defer ticker.Stop()
 
-	// Initial check immediately
 	e.performCheck(ctx, service)
 
 	for {
@@ -98,7 +91,6 @@ func (e *MonitoringEngine) monitorLoop(ctx context.Context, service *domain.Serv
 }
 
 func (e *MonitoringEngine) performCheck(ctx context.Context, service *domain.Service) {
-	// 5 seconds timeout for individual checks
 	checkCtx, cancel := context.WithTimeout(ctx, 5*time.Second) 
 	defer cancel()
 
