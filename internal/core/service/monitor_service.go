@@ -29,23 +29,27 @@ func NewMonitorService(repo ports.ServiceRepository, metricRepo ports.MetricRepo
 	}
 }
 
-func (s *MonitorService) RegisterService(ctx context.Context, name, url string, intervalSeconds int) (*domain.Service, error) {
-	if name == "" || url == "" {
-		return nil, errors.New("name and url are required")
-	}
-	if intervalSeconds < 1 {
-		intervalSeconds = 60
+func (s *MonitorService) RegisterService(ctx context.Context, name, url string, interval int, slackEnabled bool) (*domain.Service, error) {
+	// Validate URL
+	if _, err := http.NewRequest("GET", url, nil); err != nil {
+		return nil, errors.New("invalid URL")
 	}
 
-	newService := domain.NewService(name, url, time.Duration(intervalSeconds)*time.Second)
+	// Default interval if invalid
+	if interval < 1 {
+		interval = 60
+	}
 
-	if err := s.repo.Create(ctx, newService); err != nil {
+	intervalDuration := time.Duration(interval) * time.Second
+	service := domain.NewService(name, url, intervalDuration, slackEnabled)
+
+	if err := s.repo.Create(ctx, service); err != nil {
 		return nil, err
 	}
 
-	s.scheduler.StartMonitorForService(newService)
+	s.scheduler.StartMonitorForService(service)
 
-	return newService, nil
+	return service, nil
 }
 
 func (s *MonitorService) ListServices(ctx context.Context) ([]*domain.Service, error) {

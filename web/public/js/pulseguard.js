@@ -46,11 +46,12 @@ window.hideAddModal = function () {
 window.handleCreate = function (e) {
     e.preventDefault();
 
-    // Construct payload. Note: Interval is in seconds as per API spec
+    // Construct payload
     const payload = {
         name: $('#input-name').val(),
         url: $('#input-url').val(),
-        interval: parseInt($('#input-interval').val())
+        interval: parseInt($('#input-interval').val()),
+        slack_enabled: $('#input-slack').is(':checked')
     };
 
     $.ajax({
@@ -179,9 +180,14 @@ function addServiceRow(service) {
     if (service.status === 'WARNING') badgeColor = 'bg-yellow-600';
     if (service.status === 'CRITICAL' || service.status === 'DOWN') badgeColor = 'bg-red-600';
 
+    const slackIcon = service.slack_enabled ? '<i class="fa-brands fa-slack text-gray-400 ml-2" title="Slack Enabled"></i>' : '';
+
     const row = `
         <tr id="service-${service.id}" class="hover:bg-gray-800/50 transition border-b border-gray-800 group">
-            <td class="p-4 font-medium text-white">${service.name}</td>
+            <td class="p-4 font-medium text-white">
+                ${service.name}
+                ${slackIcon}
+            </td>
             <td class="p-4 text-gray-400 text-sm font-mono truncate max-w-xs">${service.url}</td>
             <td class="p-4 text-gray-500 text-sm">${intervalSec}s</td>
             <td class="p-4">

@@ -52,11 +52,13 @@ func (s *AnalyzerService) AnalyzeResult(ctx context.Context, result domain.Check
 			slog.Error("Failed to update service status", "id", service.ID, "error", err)
 		} else {
 			// Notify success update
-			go func() {
-				if err := s.notifier.NotifyStatusChange(context.Background(), service, oldStatus, newStatus); err != nil {
-					slog.Error("Failed to send notification", "error", err)
-				}
-			}()
+			if service.SlackEnabled {
+				go func() {
+					if err := s.notifier.NotifyStatusChange(ctx, service, oldStatus, newStatus); err != nil {
+						slog.Error("Failed to send notification", "error", err, "service", service.Name)
+					}
+				}()
+			}
 		}
 	}
 }

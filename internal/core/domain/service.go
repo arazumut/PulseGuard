@@ -29,6 +29,7 @@ type Service struct {
 	Type       string            `json:"type"`
 	Thresholds ServiceThresholds `json:"thresholds"`
 	Status     ServiceStatus     `json:"status"`
+	SlackEnabled bool            `json:"slack_enabled"`
 	CreatedAt time.Time     `json:"created_at"`
 	UpdatedAt time.Time     `json:"updated_at"`
 }
@@ -50,13 +51,14 @@ type ServiceStats struct {
 	Since            time.Time     `json:"since"`
 }
 
-func NewService(name, url string, interval time.Duration) *Service {
+func NewService(name, url string, interval time.Duration, slackEnabled bool) *Service {
 	return &Service{
 		ID:        uuid.New(),
 		Name:      name,
 		URL:       url,
 		Interval:  interval,
 		Type:     "HTTP",
+		SlackEnabled: slackEnabled,
 		Thresholds: ServiceThresholds{
 			LatencyWarning:  500 * time.Millisecond,
 			LatencyCritical: 2000 * time.Millisecond,

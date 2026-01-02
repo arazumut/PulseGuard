@@ -17,9 +17,10 @@ func NewServiceHandler(svc *service.MonitorService) *ServiceHandler {
 }
 
 type CreateServiceRequest struct {
-	Name     string `json:"name"`
-	URL      string `json:"url"`
-	Interval int    `json:"interval"` // Seconds
+	Name         string `json:"name"`
+	URL          string `json:"url"`
+	Interval     int    `json:"interval"` // Seconds
+	SlackEnabled bool   `json:"slack_enabled"`
 }
 
 func (h *ServiceHandler) Register(c *fiber.Ctx) error {
@@ -28,7 +29,7 @@ func (h *ServiceHandler) Register(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	result, err := h.svc.RegisterService(c.Context(), req.Name, req.URL, req.Interval)
+	result, err := h.svc.RegisterService(c.Context(), req.Name, req.URL, req.Interval, req.SlackEnabled)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
