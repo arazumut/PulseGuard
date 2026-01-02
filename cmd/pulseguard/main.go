@@ -10,15 +10,17 @@ import (
 	"syscall"
 
 	"time"
-
+	
 	"github.com/gofiber/fiber/v2"
 	"github.com/umutaraz/pulseguard/internal/adapter/handler/http"
 	"github.com/umutaraz/pulseguard/internal/adapter/handler/websocket"
 	redis_bus "github.com/umutaraz/pulseguard/internal/adapter/bus/redis"
+	memory_bus "github.com/umutaraz/pulseguard/internal/adapter/bus/memory"
 	"github.com/umutaraz/pulseguard/internal/adapter/notification/slack"
 	"github.com/umutaraz/pulseguard/internal/adapter/storage/postgres"
 	"github.com/umutaraz/pulseguard/internal/config"
 	"github.com/umutaraz/pulseguard/internal/core/domain"
+	"github.com/umutaraz/pulseguard/internal/core/ports"
 	"github.com/umutaraz/pulseguard/internal/core/service"
 	"github.com/umutaraz/pulseguard/internal/monitor/pinger"
 	"github.com/umutaraz/pulseguard/internal/monitor/scheduler"
@@ -45,12 +47,25 @@ func main() {
 
 	slackService := slack.NewSlackService(cfg.Notification.SlackWebhookURL)
 
-	// Init Redis Event Bus (Scalability Layer)
-	eventBus, err := redis_bus.NewRedisEventBus(cfg.Redis)
-	if err != nil {
-		log.Fatalf("Failed to init Redis: %v", err)
+	// --- Event Bus Strategy (Hybrid) ---
+	var eventBus ports.EventBus
+	
+	// Try Redis first
+	if cfg.Redis.Addr != "" {
+		rbus, err := redis_bus.NewRedisEventBus(cfg.Redis)
+		if err == nil {
+			eventBus = rbus
+			slog.Info("Event Bus: Redis (Distributed)")
+		} else {
+			slog.Warn("Redis unavailable, falling back to Memory", "error", err)
+		}
 	}
-	slog.Info("Connected to Redis Events")
+
+	// Fallback to Memory
+	if eventBus == nil {
+		eventBus = memory_bus.NewMemoryEventBus()
+		slog.Info("Event Bus: In-Memory (Standalone)")
+	}
 
 	httpPinger := pinger.NewHTTPPinger(5 * time.Second)
 	engine := scheduler.NewMonitoringEngine(repo, httpPinger)

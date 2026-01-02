@@ -1,5 +1,5 @@
 # Build Stage
-FROM golang:1.23-alpine AS builder
+FROM golang:alpine AS builder
 
 # Gerekli sistem paketlerini yükle (gcc, musl-dev cgo için gerekebilir)
 RUN apk add --no-cache git gcc musl-dev
@@ -29,7 +29,8 @@ COPY --from=builder /app/pulseguard .
 # Frontend dosyalarını kopyala (HTML/JS/CSS)
 COPY --from=builder /app/web ./web
 # Config dosyasını kopyala (fallback için)
-COPY --from=builder /app/config.yaml ./config.yaml
+# Config dosyasını kopyala (fallback için) - Dosya yoksa hata vermesin diye siliyoruz veya opsiyonel yapıyoruz
+# COPY --from=builder /app/config.yaml ./config.yaml
 
 # Portu aç
 EXPOSE 8080

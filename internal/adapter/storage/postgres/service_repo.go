@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -82,10 +81,7 @@ func (r *PostgresServiceRepository) GetByID(ctx context.Context, id uuid.UUID) (
 		return nil, fmt.Errorf("failed to get service: %w", err)
 	}
 
-	s.Interval = time.Duration(intervalSeconds) * time.Second
-	s.Status = domain.ServiceStatus(statusStr)
-
-	if err := json.Unmarshal(thresholdsJSON, &s.Thresholds); err != nil {
+	if err := json.Unmarshal(thresholdsJSON, &service.Thresholds); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal thresholds: %w", err)
 	}
 
@@ -110,13 +106,22 @@ func (r *PostgresServiceRepository) GetAll(ctx context.Context) ([]*domain.Servi
 		var thresholdsJSON []byte
 
 		if err := rows.Scan(
-			&service.ID, &service.Name, &service.URL, &service.Interval, &service.Type, &thresholdsJSON, &service.Status, &service.SlackEnabled, &service.CreatedAt, &service.UpdatedAt,
+			&service.ID,
+			&service.Name,
+			&service.URL,
+			&service.Interval,
+			&service.Type,
+			&thresholdsJSON,
+			&service.Status,
+			&service.SlackEnabled,
+			&service.CreatedAt,
+			&service.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
 
 		if err := json.Unmarshal(thresholdsJSON, &service.Thresholds); err != nil {
-			// Log error but continue? Or fail? Let's continue for now
+			// Log error but continue
 		}
 
 		services = append(services, &service)

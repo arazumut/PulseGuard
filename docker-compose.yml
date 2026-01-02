@@ -1,9 +1,30 @@
 version: '3.8'
 
 services:
+  app:
+    build: .
+    container_name: pulseguard_app
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - PULSE_POSTGRES_HOST=postgres
+      - PULSE_POSTGRES_PORT=5432
+      - PULSE_POSTGRES_USER=pulseguard
+      - PULSE_POSTGRES_PASSWORD=pulseguard_password
+      - PULSE_POSTGRES_DBNAME=pulseguard
+      - PULSE_REDIS_ADDR=redis:6379
+      - PULSE_APP_ENVIRONMENT=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
   postgres:
     image: postgres:15-alpine
     container_name: pulseguard_db
+    restart: always
     environment:
       POSTGRES_USER: pulseguard
       POSTGRES_PASSWORD: pulseguard_password
@@ -11,7 +32,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pulseguard_pg_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pulseguard"]
       interval: 5s
@@ -21,16 +42,12 @@ services:
   redis:
     image: redis:7-alpine
     container_name: pulseguard_redis
+    restart: always
     ports:
       - "6379:6379"
     volumes:
-      - pulseguard_redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - redis_data:/data
 
 volumes:
-  pulseguard_pg_data:
-  pulseguard_redis_data:
+  postgres_data:
+  redis_data:
