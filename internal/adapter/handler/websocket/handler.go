@@ -9,15 +9,12 @@ import (
 
 func NewWebSocketHandler(hub *Hub) fiber.Handler {
 	return websocket.New(func(c *websocket.Conn) {
-		// Register connection
 		hub.register <- c
 		defer func() {
 			hub.unregister <- c
 			c.Close()
 		}()
 
-		// Keep connection alive / Listen for incoming (if any)
-		// For dashboard, we mostly push OUT, but client might send "subscribe" etc.
 		for {
 			_, _, err := c.ReadMessage()
 			if err != nil {
@@ -30,7 +27,6 @@ func NewWebSocketHandler(hub *Hub) fiber.Handler {
 	})
 }
 
-// Middleware to upgrade HTTP to WS
 func UpgradeMiddleware(c *fiber.Ctx) error {
 	if websocket.IsWebSocketUpgrade(c) {
 		c.Locals("allowed", true)

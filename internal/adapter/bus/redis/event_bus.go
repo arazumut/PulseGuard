@@ -24,7 +24,6 @@ func NewRedisEventBus(cfg config.RedisConfig) (*RedisEventBus, error) {
 		DB:       cfg.DB,
 	})
 
-	// Ping check
 	if err := client.Ping(context.Background()).Err(); err != nil {
 		return nil, fmt.Errorf("failed to connect to redis: %w", err)
 	}
@@ -43,7 +42,6 @@ func (r *RedisEventBus) PublishCheckResult(ctx context.Context, result domain.Ch
 func (r *RedisEventBus) SubscribeCheckResults(ctx context.Context) (<-chan domain.CheckResult, error) {
 	sub := r.client.Subscribe(ctx, ChannelName)
 	
-	// Check subscription
 	if _, err := sub.Receive(ctx); err != nil {
 		return nil, err
 	}
