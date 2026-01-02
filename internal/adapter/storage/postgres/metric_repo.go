@@ -22,10 +22,12 @@ func NewPostgresMetricRepository(db *pgxpool.Pool) *PostgresMetricRepository {
 
 func (r *PostgresMetricRepository) Save(ctx context.Context, result *domain.CheckResult) error {
 	query := `
-		INSERT INTO checks (service_id, checked_at, status_code, latency_ns, success, error_message)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO checks (id, service_id, checked_at, status_code, latency, success, error_message)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
+	// ... (Rest of logic is fine, latencyNs is passed as arg 4)
 
+	newID := uuid.New()
 	latencyNs := result.Latency.Nanoseconds()
 	
 	var errorMessage *string
@@ -38,6 +40,7 @@ func (r *PostgresMetricRepository) Save(ctx context.Context, result *domain.Chec
 	}
 
 	_, err := r.db.Exec(ctx, query,
+		newID,
 		result.ServiceID,
 		result.CheckedAt,
 		statusCode,
@@ -56,7 +59,7 @@ func (r *PostgresMetricRepository) Save(ctx context.Context, result *domain.Chec
 // GetHistory Last N metrics for a service
 func (r *PostgresMetricRepository) GetHistory(ctx context.Context, serviceID uuid.UUID, limit int) ([]domain.CheckResult, error) {
 	query := `
-		SELECT checked_at, status_code, latency_ns, success, error_message 
+		SELECT checked_at, status_code, latency, success, error_message 
 		FROM checks 
 		WHERE service_id = $1 
 		ORDER BY checked_at DESC 
@@ -75,10 +78,13 @@ func (r *PostgresMetricRepository) GetHistory(ctx context.Context, serviceID uui
 		r.ServiceID = serviceID
 		var errorMessage *string
 		var statusCode *int
+		var latencyNs int64
 		
-		if err := rows.Scan(&r.CheckedAt, &statusCode, &r.Latency, &r.Success, &errorMessage); err != nil {
+		if err := rows.Scan(&r.CheckedAt, &statusCode, &latencyNs, &r.Success, &errorMessage); err != nil {
 			return nil, err
 		}
+
+		r.Latency = time.Duration(latencyNs) // Convert int64 -> Duration
 
 		if errorMessage != nil {
 			r.ErrorMessage = *errorMessage
@@ -98,7 +104,7 @@ func (r *PostgresMetricRepository) GetStats(ctx context.Context, serviceID uuid.
 		SELECT 
 			COUNT(*) as total, 
 			COUNT(*) FILTER (WHERE success = false) as failed,
-			COALESCE(AVG(latency_ns), 0) as avg_latency
+			COALESCE(AVG(latency), 0) as avg_latency
 		FROM checks
 		WHERE service_id = $1 AND checked_at >= $2
 	`
