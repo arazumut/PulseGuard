@@ -4,7 +4,6 @@
 
 
 ## 🏗 Mimari Yaklaşım (Architecture)
-
 Bu proje, kodun test edilebilirliğini, bakımını ve ölçeklenebilirliğini sağlamak amacıyla **Hexagonal Architecture (Ports and Adapters)** ilkelerine sadık kalınarak tasarlanmıştır.
 
 ### Katmanlar
