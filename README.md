@@ -2,6 +2,7 @@
 
 **PulseGuard**, performans ve ölçeklenebilirliğin ön planda tutulduğu, **Go (Golang)** ile geliştirilmiş, kendi sunucunuzda barındırabileceğiniz (self-hosted) modern bir servis izleme ve anomali tespit sistemidir.
 
+
 ## 🏗 Mimari Yaklaşım (Architecture)
 
 Bu proje, kodun test edilebilirliğini, bakımını ve ölçeklenebilirliğini sağlamak amacıyla **Hexagonal Architecture (Ports and Adapters)** ilkelerine sadık kalınarak tasarlanmıştır.
