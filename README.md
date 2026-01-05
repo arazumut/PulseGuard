@@ -80,5 +80,5 @@ Uygulama loglarında her 10 saniyede bir `Health Check` çıktısı göreceksini
 
 - [x] **Faz 0:** Mimari Kurulum (Hexagonal + Fiber)
 - [x] **Faz 1:** Core Monitoring Engine (Scheduler + Pinger)
-- [ ] **Faz 2:** Akıllı Analiz (Latency trendleri)
-- [ ] **Faz 3:** PostgreSQL & Redis (Kalıcı veri)
+- [x] **Faz 2:** Akıllı Analiz (Latency trendleri)
+- [x] **Faz 3:** PostgreSQL & Redis (Kalıcı veri)
